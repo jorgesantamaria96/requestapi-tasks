@@ -1,9 +1,22 @@
 import Task from "../models/Tasks";
+import { getPagination } from "../libs/getPaginations";
 
 export const findAllTasks = async (req, res) => {
   try {
-    const tasks = await Task.find();
-    res.json(tasks);
+    const { page, size, title } = req.query;
+
+    const condition = title
+      ? { title: { $regex: new RegExp(title), $options: "i" } }
+      : {};
+
+    const { offset, limit } = getPagination(page, size);
+    const data = await Task.paginate(condition, { offset, limit });
+    res.json({
+      totalItems: data.totalDocs,
+      tasks: data.docs,
+      totalPages: data.totalPages,
+      currentPage: data.page - 1,
+    });
   } catch (error) {
     res.status(500).json({
       message: error.message || "Something goes wrong retrieving the tasks",
